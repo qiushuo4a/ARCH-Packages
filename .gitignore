@@ -1,3 +1,4 @@
+# Source File
 *.tar
 *.tar.*
 *.jar
@@ -10,5 +11,9 @@
 *.log.*
 *.sig
 
-pkg/
-src/
+# Package File
+*/*.pkg.tar.zst
+
+# Build Dirs
+*/pkg/
+*/src/

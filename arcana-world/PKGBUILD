@@ -1,0 +1,29 @@
+# Maintainer: Qiushuo4a <xian@xlnc.company>
+
+pkgname=arcana-world-bin
+_pkgname=arcana-world
+pkgver=0.3.2
+pkgrel=1
+arch=('x86_64' 'aarch64')
+url="https://github.com/TarocchiLive/arcana-world/releases"
+pkgdesc="Bilibili live streaming tool includes  Wayland overlay and text-to-speech helpers"
+license=('GPL-3.0') #put "-only" or "-or-later" behind the string and remove this note
+# depends=() #Main programme is no DT_NEEDED
+optdepends=(
+	'pango: Chat overlay rending dependency'
+	'wayland: Chat overlay display backend'
+)
+options=('!debug' '!strip')
+
+source_x86_64=(arcana-world-linux-${pkgver}-${pkgrel}-amd64.tar.gz::"https://github.com/TarocchiLive/${_pkgname}/releases/download/v${pkgver}/${_pkgname}-linux-amd64.tar.gz")
+source_aarch64=(arcana-world-linux-${pkgver}-${pkgrel}-aarch64.tar.gz::"https://github.com/TarocchiLive/${_pkgname}/releases/download/v${pkgver}/${_pkgname}-linux-arm64.tar.gz")
+sha256sums_x86_64=("7143686384d2b433d2deebb8e50708fd32cefdbe57511438e21c78c95e97c9dc")
+sha256sums_aarch64=("b22ee27e11d5e3806e4cc953f74e14bf3b0c5320e078eb99d500eacfbef0fd46")
+
+package() {
+	mkdir -p ${pkgdir}/usr/lib/${_pkgname}/ ${pkgdir}/usr/bin/
+	cp -r $srcdir/arcana-world ${srcdir}/libexec/ ${pkgdir}/usr/lib/${_pkgname}/
+	ln -s /usr/lib/${_pkgname}/arcana-world ${pkgdir}/usr/bin/arcana-world
+
+	install -Dm644 "${srcdir}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
