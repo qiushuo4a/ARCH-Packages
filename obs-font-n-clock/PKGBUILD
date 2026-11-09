@@ -1,0 +1,40 @@
+# NOTE: Please fill out the license field for your package! If it is unknown,
+# then please put 'unknown'.
+
+# Maintainer: Qiushuo4a <xian@xlnc.company>
+# Source (repo) Maintainer: mizznoff@gmail.com
+pkgname=obs-font-n-clock-plugin-xlnc
+_pkgname=font-n-clock
+pkgver=1.2.0
+pkgrel=1
+epoch=
+pkgdesc="Font-n-Clock"
+arch=('x86_64')
+depends=('obs-studio')
+url="https://github.com/169tools/font-n-clock"
+license=('GPL-2.0')
+options=('!debug' '!strip') #debug->启用debug !strip->禁用调试符号
+source=("${url}/releases/download/${pkgver}/Font-n-Clock-${pkgver}-x86_64-linux-gnu.deb")  #source 只能是文件 同级目录可以省略路径 开始后makepkg会将所有的source文件copy到$srcdir/中
+sha256sums=('592fa6583d24fe0c8ada205a6d89e4b5467d27ff52bf94f75d95657ed1cfe736')
+
+
+
+package() {
+	cd "$srcdir"
+
+	##---- BEGIN 1.DEB 包打包实例
+	# data.tar.xz 内含 ./usr/ 目录,直接解压到 pkgdir 即完成安装布局
+	tar -xf "$srcdir/data.tar.gz" -C "$pkgdir" --no-same-owner
+
+	#更新目录 Dir UPDATE (没有实行 Not Applied)
+	#WARNING: 插件仍然使用旧版目录 The plugin is still in old styled Directory structure
+	#mkdir -p $pkgdir/usr/lib/obs-modules/plugins/
+	mv $pkgdir/usr/lib/x86_64-linux-gnu/obs-plugins/ $pkgdir/usr/lib/obs-plugins
+	rm -r $pkgdir/usr/lib/x86_64-linux-gnu/
+
+	# 修正权限:目录 0755,普通数据 0644
+	find "$pkgdir" -type f -exec chmod 0644 {} +
+	find "$pkgdir" -type d -exec chmod 0755 {} +
+	#使用 install -Dm 命令处理资源文件会更好 解压时保留权限也会更轻松
+	##---- END 1
+}
