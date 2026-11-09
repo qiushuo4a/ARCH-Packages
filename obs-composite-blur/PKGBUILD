@@ -1,0 +1,38 @@
+# NOTE: Please fill out the license field for your package! If it is unknown,
+# then please put 'unknown'.
+
+# Maintainer: Qiushuo4a <xian@xlnc.company>
+# Source (repo) Maintainer:
+pkgname=obs-composite-blur-plugin-xlnc
+_pkgname=obs-composite-blur
+pkgver=1.6.1
+pkgrel=1
+epoch=
+pkgdesc="obs plugin composite-blur"
+arch=('x86_64')
+depends=('obs-studio')
+url="https://github.com/FiniteSingularity/obs-composite-blur"
+license=('GPL-2.0')
+options=('!debug' '!strip') #debug->启用debug !strip->禁用调试符号
+source=("${url}/releases/download/v${pkgver}/${_pkgname}-${pkgver}-x86_64-linux-gnu.deb")  #source 只能是文件 同级目录可以省略路径 开始后makepkg会将所有的source文件copy到$srcdir/中
+sha256sums=('7fb0c87428439face2710c4af3bf94c1c39e62a4aabb3852d567e6b33a288346')
+
+
+
+package() {
+	cd "$srcdir"
+
+	##---- BEGIN 1.DEB 包打包实例
+	# data.tar.xz 内含 ./usr/ 目录,直接解压到 pkgdir 即完成安装布局
+	tar -xf "$srcdir/data.tar.gz" -C "$pkgdir" --no-same-owner
+
+	#更新目录 Dir UPDATE
+	mv $pkgdir/usr/lib/x86_64-linux-gnu/obs-modules/ $pkgdir/usr/lib/obs-modules/
+	rm -r $pkgdir/usr/lib/x86_64-linux-gnu/
+
+	# 修正权限:目录 0755,普通数据 0644
+	find "$pkgdir" -type f -exec chmod 0644 {} +
+	find "$pkgdir" -type d -exec chmod 0755 {} +
+	#使用 install -Dm 命令处理资源文件会更好 解压时保留权限也会更轻松
+	##---- END 1
+}
