@@ -1,0 +1,39 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+# Reference: https://specifications.freedesktop.org/desktop-entry/latest-single/
+# ========== 必需键 ==========
+# 条目类型：Application（应用程序）、Link（URL 快捷方式）、Directory（菜单子目录）
+Type=Link
+# 显示名称（支持本地化，如 Name[zh_CN]=示例应用）
+Name=Desktop Entity
+
+# ========== 标识与版本 ==========
+# 桌面条目规范的版本，建议填写 1.0 或 1.5
+Version=1.5
+# 通用名称，例如 "Web Browser"（帮助用户理解应用类别）
+GenericName=Example Utility
+# 简短描述，通常作为工具提示
+Comment=An example application for demonstration
+
+# ========== 图标与外观 ==========
+# 图标名称（主题图标）或绝对路径
+Icon=example-app
+
+# ========== 执行与路径 ==========
+# 要执行的命令（可带参数和字段码，如 %U、%F）
+Exec=
+#链接模式指定连接
+URL=https://github.com/mmlTools/audio-wave
+# 工作目录
+Path=
+# 是否在终端中运行（true/false）
+Terminal=false
+
+
+# ========== 分类与关联 ==========
+# 菜单分类（必须以分号结尾），可用值参见 Desktop Menu Specification
+Categories=Utility;Development;
+# 支持的 MIME 类型
+MimeType=
+# 搜索关键词，帮助用户在启动器中查找
+Keywords=example;demo;sample;
