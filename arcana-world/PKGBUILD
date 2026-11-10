@@ -3,15 +3,17 @@
 pkgname=arcana-world-bin
 _pkgname=arcana-world
 pkgver=0.4.6
-pkgrel=1
+pkgrel=2
 arch=('x86_64' 'aarch64')
 url="https://github.com/TarocchiLive/arcana-world/releases"
 pkgdesc="Bilibili live streaming tool includes  Wayland overlay and text-to-speech helpers"
 license=('GPL-3.0') #put "-only" or "-or-later" behind the string and remove this note
 # depends=() #Main programme is no DT_NEEDED
 optdepends=(
-	'pango: Chat overlay rending dependency'
-	'wayland: Chat overlay display backend'
+	'pango: native overlay text rendering (pulls glib2/cairo/harfbuzz/fontconfig)'
+	'wayland: native overlay Wayland display backend'
+	'vulkan-icd-loader: TTS WebGPU acceleration (a Vulkan driver is also needed)'
+	'gnome-shell: Qt overlay GNOME window bridge, enable the Arcana Elegant extension'
 )
 options=('!debug' '!strip')
 
@@ -21,6 +23,9 @@ sha256sums_x86_64=("b1f326e7d2fe58d65e4f0a6c11b01f325139561f54e758c8f901fe716829
 sha256sums_aarch64=("df943480b9b15eb7cc5a6a30d7152abb2f5cec2465cb15284b4ed90051c4cf11")
 
 package() {
+	# arcana-world now use more GUI related libs and have a new support to GNOME shell that makes package size larger than ever. After The analysis by GLM-5.3 AI, I noticed These libs are hard to trip off or replace with libs provided by pacman official source with all functions runs well.
+	# Maybe we need a new package arcana-world-lite which keeps TUI interface and simple overlay support like version 2.x
+
 	mkdir -p ${pkgdir}/usr/lib/${_pkgname}/ ${pkgdir}/usr/bin/
 	cp -r $srcdir/arcana-world ${srcdir}/libexec/ ${pkgdir}/usr/lib/${_pkgname}/
 	ln -s /usr/lib/${_pkgname}/arcana-world ${pkgdir}/usr/bin/arcana-world
