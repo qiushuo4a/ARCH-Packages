@@ -1,0 +1,36 @@
+# Maintainer: Qiushuo4a <xian@xlnc.company>
+
+pkgname=laplace-persona
+_pkgname=laplace-persona
+pkgver=0.85.0
+pkgrel=1
+pkgdesc="A cross-platform Exendable Vtuber streaming software"
+arch=('x86_64')
+license=('custom')
+url="https://laplace.live/persona"
+options=('!debug' '!strip') #debug->启用debug !strip->禁用调试符号
+
+DLAGENTS=("https::/usr/bin/curl -A 'Mozilla' -fLC - --retry 3 --retry-delay 3 -o %o %u")
+source=("https://downloads.vrp.moe/persona/v${pkgver}/laplace-persona_${pkgver}_amd64.deb")  #source 只能是文件 同级目录可以省略路径 开始后makepkg会将所有的source文件copy到$srcdir/中
+sha256sums=('b889beed8d1c298e63829b7156ede359339b2b7c55f272d879183d6516689a19')
+#makedepends=("curl-impersonate") # curl -A 实现过检测
+
+
+
+package() {
+	cd "$srcdir"
+
+	##---- BEGIN 1.DEB 包打包实例
+	# data.tar.xz 内含 ./usr/ 目录,直接解压到 pkgdir 即完成安装布局
+	tar -xf "$srcdir/data.tar.xz" -C "$pkgdir" --no-same-owner
+
+	#修正启动文件的图标引用
+	sed -i 's|^Icon=.*|Icon=/usr/share/icons/hicolor/1024x1024/apps/laplace-persona.png|' "$pkgdir/usr/share/applications/laplace-persona.desktop"
+
+	# 修正权限:可执行文件 0755,普通数据 0644
+	find "$pkgdir" -type f -exec chmod 0644 {} +
+	find "$pkgdir" -type d -exec chmod 0755 {} +
+	chmod 0755 "$pkgdir/opt/LAPLACE Persona/laplace-persona" 
+	#使用 install -Dm 命令处理资源文件会更好 解压时保留权限也会更轻松
+	##---- END 1
+}
