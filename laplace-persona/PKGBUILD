@@ -2,7 +2,7 @@
 
 pkgname=laplace-persona
 _pkgname=laplace-persona
-pkgver=0.85.0
+pkgver=0.91.0
 pkgrel=1
 pkgdesc="A cross-platform Exendable Vtuber streaming software"
 arch=('x86_64')
@@ -12,7 +12,7 @@ options=('!debug' '!strip') #debug->启用debug !strip->禁用调试符号
 
 DLAGENTS=("https::/usr/bin/curl -A 'Mozilla' -fLC - --retry 3 --retry-delay 3 -o %o %u")
 source=("https://downloads.vrp.moe/persona/v${pkgver}/laplace-persona_${pkgver}_amd64.deb")  #source 只能是文件 同级目录可以省略路径 开始后makepkg会将所有的source文件copy到$srcdir/中
-sha256sums=('b889beed8d1c298e63829b7156ede359339b2b7c55f272d879183d6516689a19')
+sha256sums=('5d9ab8d978b2c10d9dbe8b3930a4ca0733904edbffd7ae59a43ff2e1c9dc6eb1')
 #makedepends=("curl-impersonate") # curl -A 实现过检测
 
 
