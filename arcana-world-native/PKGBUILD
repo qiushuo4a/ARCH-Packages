@@ -1,0 +1,147 @@
+# Maintainer: Qiushuo4a <xian@xlnc.company>
+#
+# 用法：在本目录执行 makepkg -sr，生成的 .pkg.tar.* 就出现在当前目录，
+# 再用 pacman -U 安装。构建走项目标准的 desktop-native 目标：
+# 主程序、原生浮层和语音 helper（不含 Qt 浮层），运行库按 SONAME 随包分发；
+# makepkg 默认还会执行 check()（项目的 make check 自检）。
+
+pkgname=arcana-world
+pkgver=0.4.6
+pkgrel=1
+pkgdesc='Bilibili live streaming console with a native Wayland overlay and speech synthesis helpers'
+arch=('x86_64' 'aarch64')
+url='https://github.com/TarocchiLive/arcana-world'
+license=('GPL-3.0-only')
+options=('!strip' '!debug')
+source=("$pkgname::git+$url.git#tag=v$pkgver")
+sha256sums=('SKIP')
+
+# libexec 内的运行库副本取自构建机，依赖这些库的原属 Arch 包：
+# 许可文本由原属包与 licenses 包在系统内提供（/usr/share/licenses/），
+# 本包据此不再重复携带许可文本，见 package()。
+depends=('pango' 'cairo' 'wayland' 'gcc-libs' 'alsa-lib' 'vulkan-icd-loader'
+         'xkeyboard-config' 'systemd-libs' 'licenses')
+makedepends=('git' 'go' 'gcc' 'patchelf' 'pkgconf' 'python')
+optdepends=('vulkan-driver: GPU acceleration for speech synthesis'
+            'noto-fonts: preferred fonts for overlay text rendering')
+
+# 从 pacman 的许可表达式里提取 SPDX 标识符，忽略 AND/OR/WITH 连接词与括号。
+arch_spdx_identifiers() {
+	local token
+	for token in $1; do
+		token="${token//(/}"
+		token="${token//)/}"
+		case "$token" in
+			AND|OR|WITH) continue ;;
+		esac
+		if [[ -n "$token" ]]; then
+			printf '%s\n' "$token"
+		fi
+	done
+}
+
+# 按 pacman 归属组装 deploy_linux.py 需要的许可目录（LINUX_LICENSE_DIR）：
+# 复制原属包自带的许可文件和 licenses 包提供的 SPDX 标准文本，
+# SOURCE.txt 记录每个包的版本与许可表达式。
+arch_collect_licenses() {
+	local destination=$1 package version licenses identifier target
+	shift
+	mkdir -p "$destination"
+	{
+		echo 'Bundled libraries and XKB data originate from these Arch Linux packages:'
+		echo
+		for package in "$@"; do
+			version="$(pacman -Q "$package" 2>/dev/null | awk '{print $2}')"
+			licenses="$(LC_ALL=C pacman -Qi "$package" 2>/dev/null \
+				| awk '/^Licenses/ {sub(/^Licenses[ \t]*:[ \t]*/, ""); print}')"
+			echo "${package} ${version} ${licenses}"
+			if [[ -d "/usr/share/licenses/$package" ]]; then
+				cp -a "/usr/share/licenses/$package" "$destination/$package"
+			fi
+			while IFS= read -r identifier; do
+				for target in "/usr/share/licenses/spdx/$identifier.txt" \
+					"/usr/share/licenses/spdx/exceptions/$identifier.txt"; do
+					if [[ -f "$target" ]]; then
+						mkdir -p "$destination/spdx"
+						cp -a "$target" "$destination/spdx/"
+					fi
+				done
+			done < <(arch_spdx_identifiers "$licenses")
+		done
+		echo
+		echo 'Standard license texts are provided system-wide by the licenses package'
+		echo '(/usr/share/licenses/spdx/) and by the owning packages (/usr/share/licenses/<package>/);'
+		echo 'the Arch package of this build therefore omits bundled duplicate license copies.'
+		echo 'XKB data under share/X11/xkb comes from the xkeyboard-config package.'
+		echo 'Libraries remain dynamically replaceable in libexec.'
+	} > "$destination/SOURCE.txt"
+}
+
+build() {
+	cd "$srcdir/$pkgname"
+
+	local out="$PWD/out" licdir="$srcdir/arch-licenses"
+	local path soname package
+	local packages=()
+
+	# Arch 没有 dpkg-query，deploy_linux.py 只认 LINUX_LICENSE_DIR；
+	# 而归属集合只有在看到部署结果后才能确定，所以先完整构建一遍作为探针，
+	# 此时许可目录仅含 SOURCE.txt（门禁只校验该文件是否存在）。
+	rm -rf "$licdir"
+	mkdir -p "$licdir"
+	printf 'Probe pass: dependency licenses are assembled after this build.\n' > "$licdir/SOURCE.txt"
+	VERSION="v$pkgver" OUT_DIR="$out" BUILD_JOBS="$(nproc)" LINUX_LICENSE_DIR="$licdir" \
+		bash scripts/build.sh desktop-native
+
+	# libexec 顶层的 *.so* 即随包分发的系统运行库，按 SONAME 找回系统原文件并查询归属。
+	# 原生运行库（onnxruntime WebGPU 插件等）不属于任何系统包，
+	# 其许可已由 licenses/tts 提供，pacman -Qoq 查不到时直接跳过。
+	shopt -s nullglob
+	for path in "$out"/libexec/*.so*; do
+		soname="${path##*/}"
+		path="/usr/lib/$soname"
+		if [[ ! -e "$path" ]]; then
+			path="$(ldconfig -p | awk -v s="$soname" '$1 == s {print $4; exit}')"
+		fi
+		if [[ ! -e "$path" ]]; then
+			continue
+		fi
+		package="$(pacman -Qoq "$path" 2>/dev/null || true)"
+		if [[ -n "$package" ]]; then
+			packages+=("$package")
+		fi
+	done
+	shopt -u nullglob
+	# share/X11/xkb 的数据整目录随包分发，归属同样记录在案。
+	packages+=('xkeyboard-config')
+
+	# 第二遍携带真实许可数据重建，libexec/licenses/linux 即为最终来源记录。
+	mapfile -t packages < <(printf '%s\n' "${packages[@]}" | sort -u)
+	rm -rf "$licdir"
+	arch_collect_licenses "$licdir" "${packages[@]}"
+	VERSION="v$pkgver" OUT_DIR="$out" BUILD_JOBS="$(nproc)" LINUX_LICENSE_DIR="$licdir" \
+		bash scripts/build.sh desktop-native
+}
+
+check() {
+	cd "$srcdir/$pkgname"
+	make check
+}
+
+package() {
+	cd "$srcdir/$pkgname"
+
+	install -Dm755 out/arcana-world "$pkgdir/usr/lib/$pkgname/arcana-world"
+	# fakeroot 环境下保留属主可能失败（idmapped/网络文件系统），内容与权限才是关键。
+	cp -a --no-preserve=ownership out/libexec "$pkgdir/usr/lib/$pkgname/libexec"
+	# 系统已提供这些许可文本（原属包 + licenses 包），去掉重复副本，只保留 SOURCE.txt 来源记录。
+	if [[ -d "$pkgdir/usr/lib/$pkgname/libexec/licenses/linux" ]]; then
+		find "$pkgdir/usr/lib/$pkgname/libexec/licenses/linux" -mindepth 1 -maxdepth 1 \
+			! -name 'SOURCE.txt' -exec rm -rf {} +
+	fi
+	# 输出目录维护清单只服务于构建期，不随包分发。
+	rm -f "$pkgdir/usr/lib/$pkgname/libexec"/.arcana-*-files.json
+	install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+	install -d "$pkgdir/usr/bin"
+	ln -s "/usr/lib/$pkgname/arcana-world" "$pkgdir/usr/bin/$pkgname"
+}

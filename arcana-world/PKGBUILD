@@ -22,6 +22,15 @@ source_aarch64=(arcana-world-linux-${pkgver}-${pkgrel}-aarch64.tar.xz::"https://
 sha256sums_x86_64=("b1f326e7d2fe58d65e4f0a6c11b01f325139561f54e758c8f901fe7168297c42")
 sha256sums_aarch64=("df943480b9b15eb7cc5a6a30d7152abb2f5cec2465cb15284b4ed90051c4cf11")
 
+provides=(
+	"arcana-world=$pkgver"
+)
+
+conflicts=(
+	"arcana-world" "arcana-world-native"
+)
+
+
 package() {
 	# arcana-world now use more GUI related libs and have a new support to GNOME shell that makes package size larger than ever. After The analysis by GLM-5.3 AI, I noticed These libs are hard to trip off or replace with libs provided by pacman official source with all functions runs well.
 	# Maybe we need a new package arcana-world-lite which keeps TUI interface and simple overlay support like version 2.x
