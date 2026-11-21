@@ -1,4 +1,11 @@
 #!/bin/bash
 
-rm -rv ./*/src/ ./*/pkg/ ./*/*.deb ./*/*.tar.*
+#Build files
+rm -rv ./*/src/ 
+rm -rv ./*/pkg/ 
+
+#Package files
+rm -rv ./*/*.deb 
+rm -rv ./*/*.tar.* 
+rm -rv ./*/*.part.* 
 
