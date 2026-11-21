@@ -1,0 +1,38 @@
+# Maintainer: Qiushuo4a <xian@xlnc.company>
+
+pkgname=bitcomet-desktop-xlnc
+_pkgname=BitComet
+pkgver=2.23.1
+pkgrel=1
+pkgdesc="A powerfull BitTorrent client with HTTP/FTP download support."
+arch=(
+	'x86_64'
+	'aarch64'	
+)
+license=('custom')
+url="https://www.bitcomet.com/"
+options=('!debug' '!strip') #debug->启用debug !strip->禁用调试符号
+
+conflicts=("bitcomet")
+provide=("bitcomet=$pkgver")
+
+source_x86_64=("download.bitcomet.com/linux/x86_64/${_pkgname}-${pkgver}-x86_64.deb")  #source 只能是文件 同级目录可以省略路径 开始后makepkg会将所有的source文件copy到$srcdir/中
+source_aarch64=("https://download.bitcomet.com/linux/arm64/${_pkgname}-${pkgver}-arm64.deb")
+sha256sums_x86_64=('74f5380902a8a5d24a50190af19c7d740743dd9b4955dad9737763db1da90847')
+sha256sums_aarch64=('SKIP')
+
+
+package() {
+	cd "$srcdir"
+
+	##---- BEGIN 1.DEB 包打包实例
+	# data.tar.xz 内含 ./usr/ 目录,直接解压到 pkgdir 即完成安装布局
+	tar -xf "$srcdir/data.tar.xz" -C "$pkgdir" --no-same-owner
+
+	# 修正权限:可执行文件 0755,普通数据 0644
+	find "$pkgdir" -type f -exec chmod 0644 {} +
+	find "$pkgdir" -type d -exec chmod 0755 {} +
+	chmod -R 0755 "$pkgdir/usr/bin/"
+	#使用 installl -Dm 命令处理资源文件会更好 解压时保留权限也会更轻松
+	##---- END 1
+}
