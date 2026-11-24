@@ -18,6 +18,12 @@
 */pkg/
 */src/
 
+# Script Runtime trash
+./*/__pycache__/
+__pycache__/
 # misc
 *.part
 
+
+# Update check report
+update-report.md
