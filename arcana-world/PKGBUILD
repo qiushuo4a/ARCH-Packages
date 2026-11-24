@@ -5,7 +5,7 @@ _pkgname=arcana-world
 pkgver=0.4.6
 pkgrel=2
 arch=('x86_64' 'aarch64')
-url="https://github.com/TarocchiLive/arcana-world/releases"
+url="https://github.com/TarocchiLive/arcana-world"
 pkgdesc="Bilibili live streaming tool includes  Wayland overlay and text-to-speech helpers"
 license=('GPL-3.0') #put "-only" or "-or-later" behind the string and remove this note
 # depends=() #Main programme is no DT_NEEDED
@@ -17,8 +17,8 @@ optdepends=(
 )
 options=('!debug' '!strip')
 
-source_x86_64=(arcana-world-linux-${pkgver}-${pkgrel}-amd64.tar.xz::"https://github.com/TarocchiLive/${_pkgname}/releases/download/v${pkgver}/${_pkgname}-linux-amd64.tar.xz")
-source_aarch64=(arcana-world-linux-${pkgver}-${pkgrel}-aarch64.tar.xz::"https://github.com/TarocchiLive/${_pkgname}/releases/download/v${pkgver}/${_pkgname}-linux-arm64.tar.xz")
+source_x86_64=(arcana-world-linux-${pkgver}-${pkgrel}-amd64.tar.xz::"${url}/${_pkgname}/releases/download/v${pkgver}/${_pkgname}-linux-amd64.tar.xz")
+source_aarch64=(arcana-world-linux-${pkgver}-${pkgrel}-aarch64.tar.xz::"${url}/${_pkgname}/releases/download/v${pkgver}/${_pkgname}-linux-arm64.tar.xz")
 sha256sums_x86_64=("b1f326e7d2fe58d65e4f0a6c11b01f325139561f54e758c8f901fe7168297c42")
 sha256sums_aarch64=("df943480b9b15eb7cc5a6a30d7152abb2f5cec2465cb15284b4ed90051c4cf11")
 
