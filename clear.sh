@@ -7,7 +7,7 @@ rm -rv ./*/pkg/
 #Package files
 rm -rv ./*/*.deb 
 rm -rv ./*/*.tar.* 
-rm -rv ./*/*.part.* 
+rm -rv ./*/*.part 
 
 #Script Chache 
 rm -rv ./*/__pycache__/
