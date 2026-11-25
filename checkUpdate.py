@@ -44,10 +44,19 @@ import os
 import re
 import sys
 import time
+import importlib
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+
+
+#脚本路径path
+sys.path.insert(0, ".scripts/version_script")
+
+#导入脚本模块
+laplace_persona = importlib.import_module("laplace_persona")
+
 
 # ---------------------------------------------------------------- 常量
 
@@ -285,6 +294,12 @@ def _http_get_text(url: str, timeout: int = REQUEST_TIMEOUT, headers=None) -> st
 #     return data["version"], "https://laplace.live/persona"
 #
 # ═══════════════════════════════════════════════════════════════════════
+
+@version_fetcher("https://laplace.live/persona")
+def fetch_laplace_persona(url):
+    return laplace_persona.check_version_interface()
+
+
 
 # ---------------------------------------------------------------- GitHub API
 
