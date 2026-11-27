@@ -32,3 +32,22 @@ makepkg -Sicf #干净的完成打包并安装
 makepkg -f # 构建并覆盖上次的构建
 pacman -U <生成的软件包文件>
 ```
+
+## 依赖描述
+根据使用的层次/阶段不同，对依赖包的需求也不同，请根据自己的需求安装软件包，其中软件包的名称参照Arch linux发行版官方仓库的名称
+
+#### level-1 使用项目/生成软件包
+
+```txt
+pacman base-devel 
+```
+
+#### level-2 使用仓库内提供的构建小工具
+
+```txt
+python curl-cffi (应该能去掉，但是我太懒了)
+```
+#### Other 其他，更好的体验
+```txt
+pacutils
+```
