@@ -11,7 +11,10 @@ packutil diff <package1> [package2 默认解析系统已安装同名包，也可
                 --merge-diff [package1 [package2 [...]]]
 
                 --system <package_name> #标记为系统包名
-分层次的help
+
+[ ] 支持将系统包传入 orig 和 sel 
+[?] 一组包diff另一组包
+[OK] 分层次的help
 
 > packutil list foo-1.0-1-x86_64.pkg.tar.zst
 /usr/bin/foo
@@ -41,7 +44,7 @@ class PkgModifiedStatus:
     REMOVED = "remove"
 
 # TODO: Debian Package Support 
-def get_file_list(pkgs_path: Path) -> list[str]:
+def get_pkg_file_list(pkgs_path: Path) -> list[str]:
     
     # 检查zstd
     zstd_check_cmd = subprocess.run([f"/usr/bin/file {pkgs_path} | /usr/bin/grep 'Zstandard compressed data' "] ,
@@ -56,7 +59,7 @@ def get_file_list(pkgs_path: Path) -> list[str]:
     for i in files_process.stdout.decode("UTF-8").split("\n") :  
         if i in PACKAGE_PASS_FILES :
             continue
-        files_list.append(i)
+        files_list.append(r"/"+i) #将路径补全成完整的系统路径
 
     return files_list
 
@@ -69,14 +72,19 @@ def get_pacman_package_file_list(pkg_name:str) -> list[str] :
     for i in  package_process.stdout.split("\n") :
         if i in PACMAN_PASS_FILES:
             continue
-        pacman_package_file_list.append( i.split(' ',maxsplit=1)[2] )    
+        pacman_package_file_list.append( i.split(' ',maxsplit=1)[1] )    
 
     return pacman_package_file_list
 
 def package_files_compare(sel_pkg_files:list , **orig_pkg_files:list) -> list[dict] :
     '''  return [{status: "add|remove", file: "/usr/bin/foo"}]   '''
-    added_files = set(sel_pkg_files) - set(orig_pkg_files)
-    removed_files = set(orig_pkg_files) - set(sel_pkg_files)
+    orig_pkg_files_all = []
+    for i in orig_pkg_files :
+        orig_pkg_files_all += orig_pkg_files[i]
+
+    added_files = set(sel_pkg_files) - set(orig_pkg_files_all)
+    removed_files = set(orig_pkg_files_all) - set(sel_pkg_files)
+
     compare_result = []
     for i in added_files :
         compare_result.append({"status":PkgModifiedStatus.ADDED,"file":i})
@@ -103,20 +111,73 @@ def package_file(value: str) -> str:
     return value
 # -------
 
+class Package():
+    name = ""
+    _files =[]
+    
+    def __init__(self, packageDescribe: list[str]| Path | str  , pkg_type: str = "pacman",
+                 system_package: bool = False, ) -> None:
+        """packageDescribe 能描述软件包文件的软件列表"""
+        
+        if isinstance(packageDescribe,list) :
+            self._files = packageDescribe
+        elif isinstance(packageDescribe,Path) :
+            self._files = get_pkg_file_list(packageDescribe)
+        elif ( packageDescribe ) and ( system_package == True ) :
+            if pkg_type == "pacman":
+                self._files = get_pacman_package_file_list(packageDescribe)  # pyright: ignore[reportArgumentType]
+            else:
+                raise NotImplementedError("暂不支持的包管理器")
+        else:
+            raise ValueError("传入参数不是合规的软件包描述")
+
+    def get_files(self) -> list:
+        return self._files
+
+    @staticmethod
+    def get_pacman_pkg_name(pkg_path:Path)->str:
+        subprocess.run ( ["/usr/bin/mkdir","-p","/tmp/XLNC_PKG"] ).check_returncode()
+        unzip = subprocess.run ( ["/usr/bin/tar","--zstd","-C","/tmp/XLNC_PKG/" ,"-xf" ,pkg_path.__str__(),".PKGINFO"] ,shell=False,capture_output=True)
+        print(unzip.stdout.decode("UTF-8"))
+        print(unzip.stderr.decode("UTF-8"))
+        with open("/tmp/XLNC_PKG/.PKGINFO","r") as f:
+            for line in f.readlines() :
+                if line.startswith("pkgname") :
+                    return line.split("=")[1].strip()
+        raise ValueError(f"无法从 {pkg_path} 中解析出软件包名")
+        return ""
+
+
 def _D_list(package: Path)-> None :
     # 直接列出包内文件
-    for i in get_file_list(package) :
+    for i in get_pkg_file_list(package) :
         print(i)
 
+def _D_diff_single(package1: Package, package2: Package) -> None :
+    # 列出两个包的文件差异
+    diff = package_files_compare(package1.get_files(), orig_pkg_files=package2.get_files())
+    if not diff :
+        print("软件包文件列表校验一致")
+        return 
+    print_diff(diff)
 
 # ---------- 两个子命令的处理函数 (骨架, 等你填业务逻辑) ----------
 def cmd_list(args: argparse.Namespace) -> int:
-    pkg_abs_path = [ Path(i).absolute() for i in args.packages ] #每个传入包的绝对路径
+    sel_pkg_abs_path = [ Path(i).absolute() for i in args.packages ] #每个传入包的绝对路径
+    diff_pkg_abs_path = [ Path(i).absolute() for i in args.diff ]
+
+    print(f"packages   = {args.packages}")
+    print(f"diff       = {args.diff!r}")        # None / SYSTEM / "用户给的包"
+    print(f"merge_diff = {args.merge_diff!r}")  # None / [] / ["a", ...]
+    print("-" * 20)
 
     if args.diff or args.merge_diff:
         # 解析 diff 对象: None / SYSTEM / "用户给的包"
-        if args.diff == SYSTEM:
-            # 对比系统内已安装的同名包
+        if args.diff == "__system__":
+            orig_pkg = Package(sel_pkg_abs_path[0])
+            diff_pkg = Package(Package.get_pacman_pkg_name(sel_pkg_abs_path[0]),system_package=True)
+            _D_diff_single(orig_pkg,diff_pkg)
+            return 0
             pass
         elif args.diff is not None:
             # 对比用户给的包
@@ -127,12 +188,9 @@ def cmd_list(args: argparse.Namespace) -> int:
 
     if len(args.packages) != 1:
         raise NotImplementedError("暂不支持一次列出多个包的内容")
-    _D_list(pkg_abs_path[0]) 
+    _D_list(sel_pkg_abs_path[0]) 
 
     # 到这里参数已经全部解析好, 只管用 args.xxx
-    print(f"packages   = {args.packages}")
-    print(f"diff       = {args.diff!r}")        # None / SYSTEM / "用户给的包"
-    print(f"merge_diff = {args.merge_diff!r}")  # None / [] / ["a", ...]
     return 0
 
 
